@@ -341,6 +341,10 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
   @override
   Future<int> getScrollY() => webView.getScrollY();
 
+  ///screenshot
+  Future<String> screenshot(int arg_instanceId, String url, String ext)  => webView.screenshot(arg_instanceId, url, ext);
+
+
   Future<void> _dispose() => webView.release();
 
   void _setCreationParams(CreationParams creationParams) {
@@ -710,4 +714,5 @@ class WebViewProxy {
   Future<void> setWebContentsDebuggingEnabled(bool enabled) {
     return android_webview.WebView.setWebContentsDebuggingEnabled(enabled);
   }
+
 }

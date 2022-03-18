@@ -235,6 +235,11 @@ class WebViewHostApiImpl extends WebViewHostApi {
     return getScrollY(instanceManager.getInstanceId(instance)!);
   }
 
+  Future<String> screenshot(int arg_instanceId, String url, String ext)  => screenshot(arg_instanceId, url, ext);
+
+
+
+
   /// Helper method to convert instances ids to objects.
   Future<void> setWebViewClientFromInstance(
     WebView instance,

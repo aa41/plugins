@@ -5,10 +5,11 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.3.0'
+        classpath 'com.android.tools.build:gradle:3.5.4'
     }
 }
 
@@ -19,7 +20,10 @@ rootProject.allprojects {
     }
 }
 
+
 apply plugin: 'com.android.library'
+//apply from: "${project.rootDir.absolutePath}/resolve_dependencies.gradle"
+
 
 android {
     compileSdkVersion 31

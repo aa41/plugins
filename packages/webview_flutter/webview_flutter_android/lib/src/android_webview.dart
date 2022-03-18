@@ -288,6 +288,10 @@ class WebView {
     return api.getScrollYFromInstance(this);
   }
 
+  ///screenshot
+  Future<String> screenshot(int arg_instanceId, String url, String ext) =>
+      api.screenshot(arg_instanceId, url, ext);
+
   /// Sets the [WebViewClient] that will receive various notifications and requests.
   ///
   /// This will replace the current handler.

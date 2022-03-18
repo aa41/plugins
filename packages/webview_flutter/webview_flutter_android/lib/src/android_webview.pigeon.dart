@@ -127,6 +127,34 @@ class CookieManagerHostApi {
       return;
     }
   }
+
+  Future<String> screenshot(
+      int arg_instanceId,  String url, String ext) async {
+    final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.WebScreenshot.screenshot', codec,
+        binaryMessenger: _binaryMessenger);
+    final Map<Object?, Object?>? replyMap =
+        await channel.send(<Object>[arg_instanceId, arg_data, url, ext])
+            as Map<Object?, Object?>?;
+    if (replyMap == null) {
+      throw PlatformException(
+        code: 'channel-error',
+        message: 'Unable to establish connection on channel.',
+        details: null,
+      );
+    } else if (replyMap['error'] != null) {
+      final Map<Object?, Object?> error =
+          (replyMap['error'] as Map<Object?, Object?>?)!;
+      throw PlatformException(
+        code: (error['code'] as String?)!,
+        message: error['message'] as String?,
+        details: error['details'],
+      );
+    } else {
+      String filePath = replyMap['result'];
+      return filePath;
+    }
+  }
 }
 
 class _WebViewHostApiCodec extends StandardMessageCodec {
@@ -1257,7 +1285,9 @@ abstract class JavaScriptChannelFlutterApi {
       _JavaScriptChannelFlutterApiCodec();
 
   void dispose(int instanceId);
+
   void postMessage(int instanceId, String message);
+
   static void setup(JavaScriptChannelFlutterApi? api,
       {BinaryMessenger? binaryMessenger}) {
     {
@@ -1349,6 +1379,7 @@ class WebViewClientHostApi {
 
 class _WebViewClientFlutterApiCodec extends StandardMessageCodec {
   const _WebViewClientFlutterApiCodec();
+
   @override
   void writeValue(WriteBuffer buffer, Object? value) {
     if (value is WebResourceErrorData) {
@@ -1381,15 +1412,22 @@ abstract class WebViewClientFlutterApi {
   static const MessageCodec<Object?> codec = _WebViewClientFlutterApiCodec();
 
   void dispose(int instanceId);
+
   void onPageStarted(int instanceId, int webViewInstanceId, String url);
+
   void onPageFinished(int instanceId, int webViewInstanceId, String url);
+
   void onReceivedRequestError(int instanceId, int webViewInstanceId,
       WebResourceRequestData request, WebResourceErrorData error);
+
   void onReceivedError(int instanceId, int webViewInstanceId, int errorCode,
       String description, String failingUrl);
+
   void requestLoading(
       int instanceId, int webViewInstanceId, WebResourceRequestData request);
+
   void urlLoading(int instanceId, int webViewInstanceId, String url);
+
   static void setup(WebViewClientFlutterApi? api,
       {BinaryMessenger? binaryMessenger}) {
     {
@@ -1629,8 +1667,10 @@ abstract class DownloadListenerFlutterApi {
   static const MessageCodec<Object?> codec = _DownloadListenerFlutterApiCodec();
 
   void dispose(int instanceId);
+
   void onDownloadStart(int instanceId, String url, String userAgent,
       String contentDisposition, String mimetype, int contentLength);
+
   static void setup(DownloadListenerFlutterApi? api,
       {BinaryMessenger? binaryMessenger}) {
     {
@@ -1809,7 +1849,9 @@ abstract class WebChromeClientFlutterApi {
   static const MessageCodec<Object?> codec = _WebChromeClientFlutterApiCodec();
 
   void dispose(int instanceId);
+
   void onProgressChanged(int instanceId, int webViewInstanceId, int progress);
+
   static void setup(WebChromeClientFlutterApi? api,
       {BinaryMessenger? binaryMessenger}) {
     {
