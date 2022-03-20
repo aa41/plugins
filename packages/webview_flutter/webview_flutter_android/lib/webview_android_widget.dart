@@ -342,8 +342,8 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
   Future<int> getScrollY() => webView.getScrollY();
 
   ///screenshot
-  Future<String> screenshot(int arg_instanceId, String url, String ext)  => webView.screenshot(arg_instanceId, url, ext);
-
+  Future<String> screenshot(String url, String ext, String filePath) =>
+      webView.screenshot(url, ext, filePath);
 
   Future<void> _dispose() => webView.release();
 
@@ -397,6 +397,8 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
         onWebResourceErrorCallback: callbacksHandler.onWebResourceError,
         loadUrl: loadUrl,
         onNavigationRequestCallback: callbacksHandler.onNavigationRequest,
+        shouldInterceptRequestCallback: callbacksHandler.shouldInterceptRequest,
+        sendInterceptRequestCallback: callbacksHandler.sendInterceptRequest,
       );
     } else {
       downloadListener._onNavigationRequest = null;
@@ -404,6 +406,8 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
         onPageStartedCallback: callbacksHandler.onPageStarted,
         onPageFinishedCallback: callbacksHandler.onPageFinished,
         onWebResourceErrorCallback: callbacksHandler.onWebResourceError,
+        shouldInterceptRequestCallback: callbacksHandler.shouldInterceptRequest,
+        sendInterceptRequestCallback: callbacksHandler.sendInterceptRequest,
       );
     }
     return webView.setWebViewClient(_webViewClient);
@@ -507,25 +511,35 @@ class WebViewAndroidDownloadListener extends android_webview.DownloadListener {
 /// this callback return true, this calls [loadUrl].
 class WebViewAndroidWebViewClient extends android_webview.WebViewClient {
   /// Creates a [WebViewAndroidWebViewClient] that doesn't handle navigation requests.
-  WebViewAndroidWebViewClient({
-    required this.onPageStartedCallback,
-    required this.onPageFinishedCallback,
-    required this.onWebResourceErrorCallback,
-  })  : loadUrl = null,
+  WebViewAndroidWebViewClient(
+      {required this.onPageStartedCallback,
+      required this.onPageFinishedCallback,
+      required this.onWebResourceErrorCallback,
+      required this.shouldInterceptRequestCallback,
+      required this.sendInterceptRequestCallback})
+      : loadUrl = null,
         onNavigationRequestCallback = null,
         super(shouldOverrideUrlLoading: false);
 
   /// Creates a [WebViewAndroidWebViewClient] that handles navigation requests.
-  WebViewAndroidWebViewClient.handlesNavigation({
-    required this.onPageStartedCallback,
-    required this.onPageFinishedCallback,
-    required this.onWebResourceErrorCallback,
-    required this.onNavigationRequestCallback,
-    required this.loadUrl,
-  }) : super(shouldOverrideUrlLoading: true);
+  WebViewAndroidWebViewClient.handlesNavigation(
+      {required this.onPageStartedCallback,
+      required this.onPageFinishedCallback,
+      required this.onWebResourceErrorCallback,
+      required this.onNavigationRequestCallback,
+      required this.loadUrl,
+      required this.shouldInterceptRequestCallback,
+      required this.sendInterceptRequestCallback})
+      : super(shouldOverrideUrlLoading: true);
 
   /// Callback when [android_webview.WebViewClient] receives a callback from [android_webview.WebViewClient].onPageStarted.
   final void Function(String url) onPageStartedCallback;
+
+  final Future<String> Function(String url) shouldInterceptRequestCallback;
+
+  final void Function(
+          String requestUrl, String webUrl, String mimeType, String encoding)
+      sendInterceptRequestCallback;
 
   /// Callback when [android_webview.WebViewClient] receives a callback from [android_webview.WebViewClient].onPageFinished.
   final void Function(String url) onPageFinishedCallback;
@@ -591,6 +605,18 @@ class WebViewAndroidWebViewClient extends android_webview.WebViewClient {
   @override
   void onPageStarted(android_webview.WebView webView, String url) {
     onPageStartedCallback(url);
+  }
+
+  @override
+  Future<String> shouldInterceptRequest(
+      android_webview.WebView webView, String url) {
+    return shouldInterceptRequestCallback(url);
+  }
+
+  @override
+  void sendInterceptRequest(android_webview.WebView webView, String requestUrl,
+      String webUrl, String mimeType, String encoding) {
+    return sendInterceptRequestCallback(requestUrl, webUrl, mimeType, encoding);
   }
 
   @override
@@ -714,5 +740,4 @@ class WebViewProxy {
   Future<void> setWebContentsDebuggingEnabled(bool enabled) {
     return android_webview.WebView.setWebContentsDebuggingEnabled(enabled);
   }
-
 }

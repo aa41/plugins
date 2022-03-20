@@ -8,9 +8,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.os.Build;
-import android.text.TextUtils;
 import android.view.KeyEvent;
-import android.webkit.MimeTypeMap;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -22,18 +20,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.webkit.WebResourceErrorCompat;
 import androidx.webkit.WebViewClientCompat;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Host api implementation for {@link WebViewClient}.
@@ -79,84 +65,18 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
                 });
             }
         }
-
         @Nullable
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-            ResourceInputStream inputStream = new ResourceInputStream();
             if (flutterApi != null) {
-                String reply = flutterApi.shouldInterceptRequest(this, view, request.getUrl().toString());
-                if (!TextUtils.isEmpty(reply)) {
-                    try {
-                        JSONObject jsonObject = new JSONObject(reply);
-                        String fileName = jsonObject.getString("fileName");
-                        String mimeType = jsonObject.getString("mimeType");
-                        String encoding = jsonObject.getString("encoding");
-                        File file = new File(fileName);
-                        if (file.exists()) {
-                            try {
-                                FileInputStream fileInputStream = new FileInputStream(reply);
-                                inputStream.attachRealInputStream(fileInputStream);
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        return new WebResourceResponse(mimeType, encoding, inputStream);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
+                WebResourceResponse webResourceResponse = flutterApi.shouldInterceptRequestV2(this, view, request);
+                if(webResourceResponse != null){
+                    return  webResourceResponse;
                 }
             }
-            WebResourceResponse origin = super.shouldInterceptRequest(view, request);
-            String mimeType = null;
-            String encoding = null;
-            if (origin != null) {
-                mimeType = origin.getMimeType();
-                encoding = origin.getEncoding();
-            }
-            //todo send mimeType encoding to flutter and download resource!!!
-
-            return new WebResourceResponse(mimeType, encoding, inputStream);
+            return super.shouldInterceptRequest(view,request);
         }
 
-        @Nullable
-        @Override
-        public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-            ResourceInputStream inputStream = new ResourceInputStream();
-            if (flutterApi != null) {
-                String reply = flutterApi.shouldInterceptRequest(this, view, url);
-                if (!TextUtils.isEmpty(reply)) {
-                    try {
-                        JSONObject jsonObject = new JSONObject(reply);
-                        String fileName = jsonObject.getString("fileName");
-                        String mimeType = jsonObject.getString("mimeType");
-                        String encoding = jsonObject.getString("encoding");
-                        File file = new File(fileName);
-                        if (file.exists()) {
-                            try {
-                                FileInputStream fileInputStream = new FileInputStream(reply);
-                                inputStream.attachRealInputStream(fileInputStream);
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        return new WebResourceResponse(mimeType, encoding, inputStream);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            WebResourceResponse origin = super.shouldInterceptRequest(view, url);
-            String mimeType = null;
-            String encoding = null;
-            if (origin != null) {
-                mimeType = origin.getMimeType();
-                encoding = origin.getEncoding();
-            }
-            //todo send mimeType encoding to flutter and download resource!!!
-
-            return new WebResourceResponse(mimeType, encoding, inputStream);
-        }
 
         @Override
         public void onPageFinished(WebView view, String url) {
@@ -248,6 +168,19 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
                 flutterApi.onPageFinished(this, view, url, reply -> {
                 });
             }
+        }
+
+        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+        @Nullable
+        @Override
+        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            if (flutterApi != null) {
+                WebResourceResponse webResourceResponse = flutterApi.shouldInterceptRequestV2(this, view, request);
+                if(webResourceResponse != null){
+                    return  webResourceResponse;
+                }
+            }
+            return super.shouldInterceptRequest(view,request);
         }
 
         // This method is only called when the WebViewFeature.RECEIVE_WEB_RESOURCE_ERROR feature is

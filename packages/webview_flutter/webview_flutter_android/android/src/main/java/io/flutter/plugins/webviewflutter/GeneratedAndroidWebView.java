@@ -7,6 +7,13 @@
 
 package io.flutter.plugins.webviewflutter;
 
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -1824,6 +1831,7 @@ public class GeneratedAndroidWebView {
      */
     public static class WebViewClientFlutterApi {
         private final BinaryMessenger binaryMessenger;
+        private final Handler handler = new Handler(Looper.getMainLooper());
 
         public WebViewClientFlutterApi(BinaryMessenger argBinaryMessenger) {
             this.binaryMessenger = argBinaryMessenger;
@@ -1864,16 +1872,47 @@ public class GeneratedAndroidWebView {
 
         public void shouldInterceptRequest(
                 Long instanceIdArg, Long webViewInstanceIdArg, String urlArg, Reply<String> callback) {
-            BasicMessageChannel<Object> channel =
-                    new BasicMessageChannel<>(
-                            binaryMessenger,
-                            "dev.flutter.pigeon.WebViewClientFlutterApi.shouldInterceptRequest",
-                            getCodec());
-            channel.send(
-                    new ArrayList<Object>(Arrays.asList(instanceIdArg, webViewInstanceIdArg, urlArg)),
-                    channelReply -> {
-                        callback.reply((String) channelReply);
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    BasicMessageChannel<Object> channel =
+                            new BasicMessageChannel<>(
+                                    binaryMessenger,
+                                    "dev.flutter.pigeon.WebViewClientFlutterApi.shouldInterceptRequest",
+                                    getCodec());
+                    channel.send(
+                            new ArrayList<Object>(Arrays.asList(instanceIdArg, webViewInstanceIdArg, urlArg))
+                    );
+                    channel.setMessageHandler(new BasicMessageChannel.MessageHandler<Object>() {
+                        @Override
+                        public void onMessage(@Nullable Object message, @NonNull BasicMessageChannel.Reply<Object> reply) {
+                            callback.reply((String) message);
+
+                        }
                     });
+                }
+            });
+
+        }
+
+        public void sendInterceptRequest(
+                Long instanceIdArg, Long webViewInstanceIdArg, String requestUrl, String mimeType, String webUrl, String encoding, Reply<String> callback) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    BasicMessageChannel<Object> channel =
+                            new BasicMessageChannel<>(
+                                    binaryMessenger,
+                                    "dev.flutter.pigeon.WebViewClientFlutterApi.sendInterceptRequest",
+                                    getCodec());
+                    channel.send(
+                            new ArrayList<Object>(Arrays.asList(instanceIdArg, webViewInstanceIdArg, requestUrl, webUrl, mimeType, encoding)),
+                            channelReply -> {
+                                callback.reply(null);
+                            });
+                }
+            });
+
         }
 
         public void onPageFinished(
@@ -1965,7 +2004,7 @@ public class GeneratedAndroidWebView {
     }
 
     public interface ScreenShotHostApi {
-        String screenShot(Long instanceId, String md5,String ext);
+        void screenShot(Long instanceId, String md5, String ext, String filePath);
 
         void dispose(Long instanceId);
 
@@ -1989,16 +2028,21 @@ public class GeneratedAndroidWebView {
                                         throw new NullPointerException("instanceIdArg unexpectedly null.");
                                     }
 
-                                    String url = (String) args.get(2);
+                                    String url = (String) args.get(1);
                                     if (url == null) {
                                         throw new NullPointerException("url unexpectedly null.");
                                     }
-                                   String ext = (String) args.get(3);
+                                    String ext = (String) args.get(2);
                                     if (ext == null) {
                                         throw new NullPointerException("ext unexpectedly null.");
                                     }
+                                    String filePath = (String) args.get(3);
+                                    if (filePath == null) {
+                                        throw new NullPointerException("filePath unexpectedly null.");
+                                    }
 
-                                    String filePath = api.screenShot(instanceIdArg.longValue(), url, ext);
+
+                                    api.screenShot(instanceIdArg.longValue(), url, ext, filePath);
                                     wrapped.put("result", filePath);
                                 } catch (Error | RuntimeException exception) {
                                     wrapped.put("error", wrapError(exception));

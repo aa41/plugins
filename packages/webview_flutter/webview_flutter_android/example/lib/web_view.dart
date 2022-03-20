@@ -34,6 +34,10 @@ typedef PageStartedCallback = void Function(String url);
 /// Signature for when a [WebView] has finished loading a page.
 typedef PageFinishedCallback = void Function(String url);
 
+typedef ShouldInterceptRequest = String Function(String url);
+
+typedef SendInterceptRequest = void Function(String requestUrl,String webUrl,String mimeType,String encoding);
+
 /// Signature for when a [WebView] is loading a page.
 typedef PageLoadingCallback = void Function(int progress);
 
@@ -80,6 +84,7 @@ class WebView extends StatefulWidget {
         AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
     this.allowsInlineMediaPlayback = false,
     this.backgroundColor,
+    this.shouldInterceptRequest, this.sendInterceptRequest,
   })  : assert(javascriptMode != null),
         assert(initialMediaPlaybackPolicy != null),
         assert(allowsInlineMediaPlayback != null),
@@ -187,6 +192,10 @@ class WebView extends StatefulWidget {
   /// directly in the HTML has been loaded and code injected with
   /// [WebViewController.evaluateJavascript] can assume this.
   final PageFinishedCallback? onPageFinished;
+
+  final ShouldInterceptRequest? shouldInterceptRequest;
+
+  final SendInterceptRequest? sendInterceptRequest;
 
   /// Invoked when a page is loading.
   final PageLoadingCallback? onProgress;
@@ -351,6 +360,21 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
   void onWebResourceError(WebResourceError error) {
     if (_webView.onWebResourceError != null) {
       _webView.onWebResourceError!(error);
+    }
+  }
+
+  @override
+  Future<String> shouldInterceptRequest(String url) async {
+    if (_webView.shouldInterceptRequest != null) {
+      return _webView.shouldInterceptRequest!(url);
+    }
+    return '';
+  }
+
+  @override
+  void sendInterceptRequest(String requestUrl, String webUrl, String mimeType, String encoding) {
+    if(_webView.sendInterceptRequest != null){
+      _webView.sendInterceptRequest!(requestUrl,webUrl,mimeType,encoding);
     }
   }
 }

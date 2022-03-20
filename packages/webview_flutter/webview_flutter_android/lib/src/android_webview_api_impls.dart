@@ -235,10 +235,9 @@ class WebViewHostApiImpl extends WebViewHostApi {
     return getScrollY(instanceManager.getInstanceId(instance)!);
   }
 
-  Future<String> screenshot(int arg_instanceId, String url, String ext)  => screenshot(arg_instanceId, url, ext);
-
-
-
+  Future<String> screenshotFromInstance(
+          WebView instance, String url, String ext, String filePath) async =>
+      screenshot(instanceManager.getInstanceId(instance)!, url, ext, filePath);
 
   /// Helper method to convert instances ids to objects.
   Future<void> setWebViewClientFromInstance(
@@ -670,6 +669,43 @@ class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
       'InstanceManager does not contain an WebView with instanceId: $webViewInstanceId',
     );
     instance!.urlLoading(webViewInstance!, url);
+  }
+
+  @override
+  Future<String> shouldInterceptRequest(
+      int instanceId, int webViewInstanceId, String url) {
+    final WebViewClient? instance =
+        instanceManager.getInstance(instanceId) as WebViewClient?;
+    final WebView? webViewInstance =
+        instanceManager.getInstance(webViewInstanceId) as WebView?;
+    assert(
+      instance != null,
+      'InstanceManager does not contain an WebViewClient with instanceId: $instanceId',
+    );
+    assert(
+      webViewInstance != null,
+      'InstanceManager does not contain an WebView with instanceId: $webViewInstanceId',
+    );
+    return instance!.shouldInterceptRequest(webViewInstance!, url);
+  }
+
+  @override
+  void sendInterceptRequest(int instanceId, int webViewInstanceId,
+      String requestUrl, String webUrl, String mimeType, String encoding) {
+    final WebViewClient? instance =
+        instanceManager.getInstance(instanceId) as WebViewClient?;
+    final WebView? webViewInstance =
+        instanceManager.getInstance(webViewInstanceId) as WebView?;
+    assert(
+      instance != null,
+      'InstanceManager does not contain an WebViewClient with instanceId: $instanceId',
+    );
+    assert(
+      webViewInstance != null,
+      'InstanceManager does not contain an WebView with instanceId: $webViewInstanceId',
+    );
+    return instance!.sendInterceptRequest(
+        webViewInstance!, requestUrl, webUrl, mimeType, encoding);
   }
 }
 

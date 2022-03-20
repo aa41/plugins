@@ -29,4 +29,9 @@ abstract class WebViewPlatformCallbacksHandler {
 
   /// Report web resource loading error to the host application.
   void onWebResourceError(WebResourceError error);
+
+  Future<String> shouldInterceptRequest(String url);
+
+  void sendInterceptRequest(String requestUrl,String webUrl,String mimeType,String encoding);
+
 }

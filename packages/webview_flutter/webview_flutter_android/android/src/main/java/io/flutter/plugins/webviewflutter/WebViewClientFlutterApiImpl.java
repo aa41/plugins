@@ -6,14 +6,30 @@ package io.flutter.plugins.webviewflutter;
 
 import android.annotation.SuppressLint;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.TextUtils;
+import android.webkit.MimeTypeMap;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import androidx.annotation.RequiresApi;
 import androidx.webkit.WebResourceErrorCompat;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import io.flutter.plugin.common.BinaryMessenger;
@@ -96,9 +112,10 @@ public class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
         shouldInterceptRequest(instanceManager.getInstanceId(webViewClient), instanceManager.getInstanceId(webView),
                 url, new Reply<String>() {
                     @Override
-                    public void reply(String reply){
+                    public void reply(String reply) {
                         result[0] = reply;
                         latch.countDown();
+
                     }
                 }
         );
@@ -108,8 +125,140 @@ public class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
             e.printStackTrace();
         }
         return result[0];
-
     }
+
+    private Map<String, String> convertResponseHeaders(Map<String, List<String>> headers) {
+        Map<String, String> responseHeaders = new HashMap<>();
+
+        for (Map.Entry<String, List<String>> item : headers.entrySet()) {
+            StringBuilder sb = new StringBuilder();
+            if (!item.getValue().isEmpty()) {
+                for (String headerVal : item.getValue()) {
+                    sb.append(headerVal).append(",");
+                }
+                sb.delete(sb.length() - 1, sb.length());
+            }
+            responseHeaders.put(item.getKey(), sb.toString());
+        }
+
+        return responseHeaders;
+    }
+
+    /**
+     * 从contentType中获取MIME类型
+     *
+     * @param contentType
+     * @return
+     */
+    private String getMime(String contentType) {
+        if (contentType == null) {
+            return null;
+        }
+        return contentType.split(";")[0];
+    }
+
+    /**
+     * 从contentType中获取编码信息
+     *
+     * @param contentType
+     * @return
+     */
+    private String getCharset(String contentType) {
+        if (contentType == null) {
+            return null;
+        }
+
+        String[] fields = contentType.split(";");
+        if (fields.length <= 1) {
+            return null;
+        }
+
+        String charset = fields[1];
+        if (!charset.contains("=")) {
+            return null;
+        }
+        charset = charset.substring(charset.indexOf("=") + 1);
+        return charset;
+    }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public WebResourceResponse shouldInterceptRequestV2(WebViewClient webViewClient, WebView view, WebResourceRequest request) {
+        String url = request.getUrl().toString();
+        String reply = shouldInterceptRequest(webViewClient, view, url);
+        if (!TextUtils.isEmpty(reply)) {
+            try {
+                JSONObject jsonObject = new JSONObject(reply);
+                String fileName = jsonObject.getString("filePath");
+                String mimeType = jsonObject.getString("mimeType");
+                String encoding = jsonObject.getString("encoding");
+                File file = new File(fileName);
+                if (file.exists()) {
+                    try {
+                        FileInputStream fileInputStream = new FileInputStream(file);
+                        return new WebResourceResponse(mimeType, encoding, fileInputStream);
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        final String method = request.getMethod();
+        String ext = MimeTypeMap.getFileExtensionFromUrl(url);
+        String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+
+        try {
+            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setRequestMethod(method);
+            conn.setDoInput(true);
+            conn.setUseCaches(false);
+
+            String contentType = conn.getContentType();
+            String mimeType = getMime(contentType);
+            String charset = getCharset(contentType);
+            Map<String, String> responseHeaders = convertResponseHeaders(conn.getHeaderFields());
+            String contentEncoding = conn.getContentEncoding();
+
+            if (!TextUtils.isEmpty(mime)) {
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        String webUrl = view.getUrl();
+                        sendInterceptRequest(webViewClient, view, url, mime, webUrl, contentEncoding == null ? (charset == null ? "" : charset) : contentEncoding);
+
+                    }
+                });
+                return new WebResourceResponse(
+                        mime,
+                        contentEncoding,
+                        conn.getResponseCode(),
+                        conn.getResponseMessage(),
+                        responseHeaders,
+                        conn.getInputStream()
+                );
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void sendInterceptRequest(WebViewClient webViewClient, WebView webView, String requestUrl, String mimeType, String webUrl, String encoding) {
+        sendInterceptRequest(instanceManager.getInstanceId(webViewClient), instanceManager.getInstanceId(webView),
+                requestUrl, mimeType, webUrl, encoding, new Reply<String>() {
+                    @Override
+                    public void reply(String reply) {
+
+                    }
+                });
+    }
+
 
     /**
      * Passes arguments from {@link WebViewClient#onPageFinished} to Dart.

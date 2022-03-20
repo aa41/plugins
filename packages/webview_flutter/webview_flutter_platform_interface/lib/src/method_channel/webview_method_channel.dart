@@ -296,4 +296,9 @@ class MethodChannelWebViewPlatform implements WebViewPlatformController {
           .toList()
     };
   }
+
+  @override
+  Future<String> screenshot(String url, String ext,String filePath) {
+    throw UnimplementedError();
+  }
 }

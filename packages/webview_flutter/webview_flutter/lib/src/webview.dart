@@ -60,6 +60,9 @@ typedef PageStartedCallback = void Function(String url);
 /// Signature for when a [WebView] has finished loading a page.
 typedef PageFinishedCallback = void Function(String url);
 
+typedef ShouldInterceptRequest = Future<String> Function(String url);
+typedef SendInterceptRequest = void Function(String requestUrl, String webUrl, String mimeType, String encoding);
+
 /// Signature for when a [WebView] is loading a page.
 typedef PageLoadingCallback = void Function(int progress);
 
@@ -89,6 +92,8 @@ class WebView extends StatefulWidget {
     this.gestureRecognizers,
     this.onPageStarted,
     this.onPageFinished,
+    this.shouldInterceptRequest,
+    this.sendInterceptRequest,
     this.onProgress,
     this.onWebResourceError,
     this.debuggingEnabled = false,
@@ -99,7 +104,8 @@ class WebView extends StatefulWidget {
         AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
     this.allowsInlineMediaPlayback = false,
     this.backgroundColor,
-  })  : assert(javascriptMode != null),
+  })
+      : assert(javascriptMode != null),
         assert(initialMediaPlaybackPolicy != null),
         assert(allowsInlineMediaPlayback != null),
         super(key: key);
@@ -235,6 +241,10 @@ class WebView extends StatefulWidget {
   /// [WebViewController.runJavascript] or [WebViewController.runJavascriptReturningResult] can assume this.
   final PageFinishedCallback? onPageFinished;
 
+  final ShouldInterceptRequest? shouldInterceptRequest;
+
+  final SendInterceptRequest? sendInterceptRequest;
+
   /// Invoked when a page is loading.
   final PageLoadingCallback? onProgress;
 
@@ -306,7 +316,7 @@ class WebView extends StatefulWidget {
 
 class _WebViewState extends State<WebView> {
   final Completer<WebViewController> _controller =
-      Completer<WebViewController>();
+  Completer<WebViewController>();
 
   late JavascriptChannelRegistry _javascriptChannelRegistry;
   late _PlatformCallbacksHandler _platformCallbacksHandler;
@@ -390,8 +400,8 @@ WebSettings _webSettingsFromWidget(WebView widget) {
 }
 
 // This method assumes that no fields in `currentValue` are null.
-WebSettings _clearUnchangedWebSettings(
-    WebSettings currentValue, WebSettings newValue) {
+WebSettings _clearUnchangedWebSettings(WebSettings currentValue,
+    WebSettings newValue) {
   assert(currentValue.javascriptMode != null);
   assert(currentValue.hasNavigationDelegate != null);
   assert(currentValue.hasProgressTracking != null);
@@ -456,7 +466,7 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
     required bool isForMainFrame,
   }) async {
     final NavigationRequest request =
-        NavigationRequest._(url: url, isForMainFrame: isForMainFrame);
+    NavigationRequest._(url: url, isForMainFrame: isForMainFrame);
     final bool allowNavigation = _widget.navigationDelegate == null ||
         await _widget.navigationDelegate!(request) ==
             NavigationDecision.navigate;
@@ -478,6 +488,14 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
   }
 
   @override
+  Future<String> shouldInterceptRequest(String url) async {
+    if (_widget.shouldInterceptRequest != null) {
+      return _widget.shouldInterceptRequest!(url);
+    }
+    return "";
+  }
+
+  @override
   void onProgress(int progress) {
     if (_widget.onProgress != null) {
       _widget.onProgress!(progress);
@@ -490,6 +508,14 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
       _widget.onWebResourceError!(error);
     }
   }
+
+  @override
+  void sendInterceptRequest(String requestUrl, String webUrl, String mimeType,
+      String encoding) {
+    if (_widget.sendInterceptRequest != null) {
+      _widget.sendInterceptRequest!(requestUrl, webUrl, mimeType, encoding);
+    }
+  }
 }
 
 /// Controls a [WebView].
@@ -497,11 +523,10 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
 /// A [WebViewController] instance can be obtained by setting the [WebView.onWebViewCreated]
 /// callback for a [WebView] widget.
 class WebViewController {
-  WebViewController._(
-    this._widget,
-    this._webViewPlatformController,
-    this._javascriptChannelRegistry,
-  ) : assert(_webViewPlatformController != null) {
+  WebViewController._(this._widget,
+      this._webViewPlatformController,
+      this._javascriptChannelRegistry,)
+      : assert(_webViewPlatformController != null) {
     _settings = _webSettingsFromWidget(_widget);
   }
 
@@ -519,9 +544,7 @@ class WebViewController {
   /// `/Users/username/Documents/www/index.html`.
   ///
   /// Throws an ArgumentError if the [absoluteFilePath] does not exist.
-  Future<void> loadFile(
-    String absoluteFilePath,
-  ) {
+  Future<void> loadFile(String absoluteFilePath,) {
     assert(absoluteFilePath.isNotEmpty);
     return _webViewPlatformController.loadFile(absoluteFilePath);
   }
@@ -535,12 +558,15 @@ class WebViewController {
     return _webViewPlatformController.loadFlutterAsset(key);
   }
 
+  Future<String> screenshot(String url, String ext, String filePath) {
+    return _webViewPlatformController.screenshot(url, ext, filePath);
+  }
+
   /// Loads the supplied HTML string.
   ///
   /// The [baseUrl] parameter is used when resolving relative URLs within the
   /// HTML string.
-  Future<void> loadHtmlString(
-    String html, {
+  Future<void> loadHtmlString(String html, {
     String? baseUrl,
   }) {
     assert(html.isNotEmpty);
@@ -558,8 +584,7 @@ class WebViewController {
   /// `url` must not be null.
   ///
   /// Throws an ArgumentError if `url` is not a valid URL string.
-  Future<void> loadUrl(
-    String url, {
+  Future<void> loadUrl(String url, {
     Map<String, String>? headers,
   }) async {
     assert(url != null);
@@ -651,12 +676,12 @@ class WebViewController {
   Future<void> _updateJavascriptChannels(
       Set<JavascriptChannel>? newChannels) async {
     final Set<String> currentChannels =
-        _javascriptChannelRegistry.channels.keys.toSet();
+    _javascriptChannelRegistry.channels.keys.toSet();
     final Set<String> newChannelNames = _extractChannelNames(newChannels);
     final Set<String> channelsToAdd =
-        newChannelNames.difference(currentChannels);
+    newChannelNames.difference(currentChannels);
     final Set<String> channelsToRemove =
-        currentChannels.difference(newChannelNames);
+    currentChannels.difference(newChannelNames);
     if (channelsToRemove.isNotEmpty) {
       await _webViewPlatformController
           .removeJavascriptChannels(channelsToRemove);
@@ -675,7 +700,7 @@ class WebViewController {
 
   Future<void> _updateSettings(WebSettings newSettings) {
     final WebSettings update =
-        _clearUnchangedWebSettings(_settings, newSettings);
+    _clearUnchangedWebSettings(_settings, newSettings);
     _settings = newSettings;
     return _webViewPlatformController.updateSettings(update);
   }

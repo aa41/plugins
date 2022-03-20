@@ -127,34 +127,6 @@ class CookieManagerHostApi {
       return;
     }
   }
-
-  Future<String> screenshot(
-      int arg_instanceId,  String url, String ext) async {
-    final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
-        'dev.flutter.pigeon.WebScreenshot.screenshot', codec,
-        binaryMessenger: _binaryMessenger);
-    final Map<Object?, Object?>? replyMap =
-        await channel.send(<Object>[arg_instanceId, arg_data, url, ext])
-            as Map<Object?, Object?>?;
-    if (replyMap == null) {
-      throw PlatformException(
-        code: 'channel-error',
-        message: 'Unable to establish connection on channel.',
-        details: null,
-      );
-    } else if (replyMap['error'] != null) {
-      final Map<Object?, Object?> error =
-          (replyMap['error'] as Map<Object?, Object?>?)!;
-      throw PlatformException(
-        code: (error['code'] as String?)!,
-        message: error['message'] as String?,
-        details: error['details'],
-      );
-    } else {
-      String filePath = replyMap['result'];
-      return filePath;
-    }
-  }
 }
 
 class _WebViewHostApiCodec extends StandardMessageCodec {
@@ -666,6 +638,34 @@ class WebViewHostApi {
       );
     } else {
       return (replyMap['result'] as int?)!;
+    }
+  }
+
+  Future<String> screenshot(
+      int arg_instanceId, String url, String ext, String filePath) async {
+    final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.WebScreenshot.screenshot', codec,
+        binaryMessenger: _binaryMessenger);
+    final Map<Object?, Object?>? replyMap =
+        await channel.send(<Object>[arg_instanceId, url, ext, filePath])
+            as Map<Object?, Object?>?;
+    if (replyMap == null) {
+      throw PlatformException(
+        code: 'channel-error',
+        message: 'Unable to establish connection on channel.',
+        details: null,
+      );
+    } else if (replyMap['error'] != null) {
+      final Map<Object?, Object?> error =
+          (replyMap['error'] as Map<Object?, Object?>?)!;
+      throw PlatformException(
+        code: (error['code'] as String?)!,
+        message: error['message'] as String?,
+        details: error['details'],
+      );
+    } else {
+      String filePath = replyMap['result'] as String;
+      return filePath;
     }
   }
 
@@ -1423,6 +1423,12 @@ abstract class WebViewClientFlutterApi {
   void onReceivedError(int instanceId, int webViewInstanceId, int errorCode,
       String description, String failingUrl);
 
+  Future<String> shouldInterceptRequest(
+      int instanceId, int webViewInstanceId, String url);
+
+  void sendInterceptRequest(int instanceId, int webViewInstanceId,
+      String requestUrl, String webUrl, String mimeType, String encoding);
+
   void requestLoading(
       int instanceId, int webViewInstanceId, WebResourceRequestData request);
 
@@ -1470,6 +1476,62 @@ abstract class WebViewClientFlutterApi {
           assert(arg_url != null,
               'Argument for dev.flutter.pigeon.WebViewClientFlutterApi.onPageStarted was null, expected non-null String.');
           api.onPageStarted(arg_instanceId!, arg_webViewInstanceId!, arg_url!);
+          return;
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.WebViewClientFlutterApi.shouldInterceptRequest',
+          codec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        channel.setMessageHandler(null);
+      } else {
+        channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+              'Argument for dev.flutter.pigeon.WebViewClientFlutterApi.shouldInterceptRequest was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final int? arg_instanceId = (args[0] as int?);
+          assert(arg_instanceId != null,
+              'Argument for dev.flutter.pigeon.WebViewClientFlutterApi.shouldInterceptRequest was null, expected non-null int.');
+          final int? arg_webViewInstanceId = (args[1] as int?);
+          assert(arg_webViewInstanceId != null,
+              'Argument for dev.flutter.pigeon.WebViewClientFlutterApi.shouldInterceptRequest was null, expected non-null int.');
+          final String? arg_url = (args[2] as String?);
+          String result = await api.shouldInterceptRequest(
+              arg_instanceId!, arg_webViewInstanceId!, arg_url!);
+          channel.send(result);
+          return;
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.WebViewClientFlutterApi.sendInterceptRequest',
+          codec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        channel.setMessageHandler(null);
+      } else {
+        channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+              'Argument for dev.flutter.pigeon.WebViewClientFlutterApi.shouldInterceptRequest was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final int? arg_instanceId = (args[0] as int?);
+          assert(arg_instanceId != null,
+              'Argument for dev.flutter.pigeon.WebViewClientFlutterApi.shouldInterceptRequest was null, expected non-null int.');
+          final int? arg_webViewInstanceId = (args[1] as int?);
+          assert(arg_webViewInstanceId != null,
+              'Argument for dev.flutter.pigeon.WebViewClientFlutterApi.shouldInterceptRequest was null, expected non-null int.');
+
+          final String? requestUrl = (args[2] as String?);
+          final String? webUrl = (args[3] as String?);
+          final String? mimeType = (args[4] as String?);
+          final String? encoding = (args[5] as String?);
+          api.sendInterceptRequest(arg_instanceId!, arg_webViewInstanceId!,
+              requestUrl!, webUrl!, mimeType!, encoding!);
+          channel.send(null);
           return;
         });
       }

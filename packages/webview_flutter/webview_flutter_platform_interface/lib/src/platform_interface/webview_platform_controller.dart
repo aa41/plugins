@@ -63,6 +63,11 @@ abstract class WebViewPlatformController {
         'WebView loadHtmlString is not implemented on the current platform');
   }
 
+  Future<String> screenshot(String url,String ext,String filePath){
+    throw UnimplementedError(
+        'WebView screenshot is not implemented on the current platform');
+  }
+
   /// Loads the specified URL.
   ///
   /// If `headers` is not null and the URL is an HTTP URL, the key value paris in `headers` will

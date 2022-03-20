@@ -289,8 +289,8 @@ class WebView {
   }
 
   ///screenshot
-  Future<String> screenshot(int arg_instanceId, String url, String ext) =>
-      api.screenshot(arg_instanceId, url, ext);
+  Future<String> screenshot( String url, String ext,String filePath) =>
+      api.screenshotFromInstance(this, url, ext,filePath);
 
   /// Sets the [WebViewClient] that will receive various notifications and requests.
   ///
@@ -697,6 +697,13 @@ abstract class WebViewClient {
   /// #fragment_id).
   void onPageStarted(WebView webView, String url) {}
 
+  ///shouldInterceptRequest
+  Future<String> shouldInterceptRequest(WebView webView,String url){
+    throw UnimplementedError();
+  }
+  /// sendInterceptRequest
+  void  sendInterceptRequest(WebView webView,String requestUrl,String webUrl,String mimeType,String encoding){
+  }
   // TODO(bparrishMines): Update documentation when WebView.postVisualStateCallback is added.
   /// Notify the host application that a page has finished loading.
   ///

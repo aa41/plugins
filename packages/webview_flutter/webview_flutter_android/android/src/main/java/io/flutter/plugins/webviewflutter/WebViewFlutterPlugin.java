@@ -5,8 +5,10 @@
 package io.flutter.plugins.webviewflutter;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import android.view.View;
+import android.webkit.WebView;
 
 import androidx.annotation.NonNull;
 
@@ -79,6 +81,9 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
             FlutterAssetManager flutterAssetManager) {
 
         InstanceManager instanceManager = new InstanceManager();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            WebView.enableSlowWholeDocumentDraw();
+        }
 
         viewRegistry.registerViewFactory(
                 "plugins.flutter.io/webview", new FlutterWebViewFactory(instanceManager));
