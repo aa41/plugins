@@ -5,10 +5,12 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Picture;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.text.TextUtils;
 import android.view.View;
+
 import com.tencent.smtt.sdk.WebView;
 
 import org.json.JSONObject;
@@ -33,22 +35,41 @@ public class CustomHostApiImpl implements GeneratedAndroidWebView.CustomHostApi 
     @Override
     public void screenShot(Long instanceId, String md5, String ext, String filePath) {
         final WebView webView = (WebView) instanceManager.getInstance(instanceId);
-      //  Bitmap bitmap = getViewBitmap(webView);
-       // Bitmap bitmap = scrollWebView(webView);
+        //  Bitmap bitmap = getViewBitmap(webView);
+        // Bitmap bitmap = scrollWebView(webView);
         Bitmap bitmap = captureX5WebViewUnsharp(webView);
         saveBitmap(webView.getContext(), bitmap, md5, ext, filePath);
     }
 
-    private static Bitmap captureX5WebViewUnsharp( WebView webView) {
+    private Bitmap captureWebView(WebView webView) {
+
+        int wholeWidth = webView.computeHorizontalScrollRange();
+        int wholeHeight = webView.computeVerticalScrollRange();
+        Bitmap x5bitmap = Bitmap.createBitmap(wholeWidth, wholeHeight, Bitmap.Config.ARGB_8888);
+
+        Canvas x5canvas = new Canvas(x5bitmap);
+        x5canvas.scale((float) wholeWidth / (float) webView.getContentWidth(), (float) wholeHeight / (float) webView.getContentHeight());
+
+        webView.getX5WebViewExtension().snapshotWholePage(x5canvas, false, false);
+        return x5bitmap;
+    }
+
+    private Bitmap captureX5WebViewUnsharp(WebView webView) {
         if (webView == null) {
             return null;
         }
-        int width = webView.getContentWidth();
-        int height = webView.getContentHeight();
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        webView.getX5WebViewExtension().snapshotWholePage(canvas, false, false);
-        return bitmap;
+
+        try {
+            return captureWebView(webView);
+        } catch (Throwable t2) {
+            int width = webView.getContentWidth();
+            int height = webView.getContentHeight();
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            webView.getX5WebViewExtension().snapshotWholePage(canvas, false, false);
+            return bitmap;
+        }
+
     }
 
     @Override

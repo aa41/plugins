@@ -204,7 +204,9 @@ public class WebViewHostApiImpl implements WebViewHostApi {
             super.removeJavascriptInterface(name);
             check();
             final ReleasableValue<JavaScriptChannel> javaScriptChannel = javaScriptInterfaces.get(name);
-            javaScriptChannel.release();
+            if(javaScriptChannel != null){
+                javaScriptChannel.release();
+            }
             javaScriptInterfaces.remove(name);
         }
 
@@ -325,6 +327,7 @@ public class WebViewHostApiImpl implements WebViewHostApi {
         @Override
         public void removeJavascriptInterface(@NonNull String name) {
             super.removeJavascriptInterface(name);
+
             final ReleasableValue<JavaScriptChannel> javaScriptChannel = javaScriptInterfaces.get(name);
             javaScriptChannel.release();
             javaScriptInterfaces.remove(name);
