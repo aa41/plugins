@@ -11,7 +11,6 @@ import android.os.Build;
 import android.view.KeyEvent;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -37,11 +36,14 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
     public interface ReleasableWebViewClient extends Releasable {
     }
 
+    public interface  SuperShouldInterceptRequest{
+        void superShouldInterceptRequest(WebView view, WebResourceRequest request);
+    }
     /**
      * Implementation of {@link WebViewClient} that passes arguments of callback methods to Dart.
      */
     @RequiresApi(Build.VERSION_CODES.N)
-    public static class WebViewClientImpl extends WebViewClient implements ReleasableWebViewClient {
+    public static class WebViewClientImpl extends WebViewClient implements ReleasableWebViewClient,SuperShouldInterceptRequest {
         @Nullable
         private WebViewClientFlutterApiImpl flutterApi;
         private final boolean shouldOverrideUrlLoading;
@@ -65,17 +67,18 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
                 });
             }
         }
-        @Nullable
-        @Override
-        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-            if (flutterApi != null) {
-                WebResourceResponse webResourceResponse = flutterApi.shouldInterceptRequestV2(this, view, request);
-                if(webResourceResponse != null){
-                    return  webResourceResponse;
-                }
-            }
-            return super.shouldInterceptRequest(view,request);
-        }
+//        @Nullable
+//        @Override
+//        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+//            if (flutterApi != null) {
+//                WebResourceResponse webResourceResponse = flutterApi.shouldInterceptRequestV2(this, view, request);
+//                if(webResourceResponse != null){
+//                    return  webResourceResponse;
+//                }
+//            }
+//
+//            return super.shouldInterceptRequest(view,request);
+//        }
 
 
         @Override
@@ -136,6 +139,11 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
             }
             flutterApi = null;
         }
+
+        @Override
+        public void superShouldInterceptRequest(WebView view, WebResourceRequest request) {
+            super.shouldInterceptRequest(view,request);
+        }
     }
 
     /**
@@ -143,7 +151,7 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
      * Dart.
      */
     public static class WebViewClientCompatImpl extends WebViewClientCompat
-            implements ReleasableWebViewClient {
+            implements ReleasableWebViewClient,SuperShouldInterceptRequest {
         private @Nullable
         WebViewClientFlutterApiImpl flutterApi;
         private final boolean shouldOverrideUrlLoading;
@@ -170,18 +178,18 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
             }
         }
 
-        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-        @Nullable
-        @Override
-        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-            if (flutterApi != null) {
-                WebResourceResponse webResourceResponse = flutterApi.shouldInterceptRequestV2(this, view, request);
-                if(webResourceResponse != null){
-                    return  webResourceResponse;
-                }
-            }
-            return super.shouldInterceptRequest(view,request);
-        }
+//        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+//        @Nullable
+//        @Override
+//        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+//            if (flutterApi != null) {
+//                WebResourceResponse webResourceResponse = flutterApi.shouldInterceptRequestV2(this, view, request);
+//                if(webResourceResponse != null){
+//                    return  webResourceResponse;
+//                }
+//            }
+//            return super.shouldInterceptRequest(view,request);
+//        }
 
         // This method is only called when the WebViewFeature.RECEIVE_WEB_RESOURCE_ERROR feature is
         // enabled. The deprecated method is called when a device doesn't support this.
@@ -241,6 +249,12 @@ public class WebViewClientHostApiImpl implements GeneratedAndroidWebView.WebView
                 });
             }
             flutterApi = null;
+        }
+
+        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+        @Override
+        public void superShouldInterceptRequest(WebView view, WebResourceRequest request) {
+            super.shouldInterceptRequest(view,request);
         }
     }
 

@@ -9,7 +9,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
-import android.webkit.MimeTypeMap;
+import android.webkit.CookieManager;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -25,13 +25,19 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import io.flutter.Log;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebViewClientFlutterApi;
 
@@ -120,7 +126,7 @@ public class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
                 }
         );
         try {
-            latch.await();
+            latch.await(200, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -186,60 +192,126 @@ public class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
     public WebResourceResponse shouldInterceptRequestV2(WebViewClient webViewClient, WebView view, WebResourceRequest request) {
         String url = request.getUrl().toString();
         String reply = shouldInterceptRequest(webViewClient, view, url);
-        if (!TextUtils.isEmpty(reply)) {
-            try {
+        if (reply == null) return null;
+        boolean hasOrigin = (request.getRequestHeaders() != null && request.getRequestHeaders().containsKey("Origin"));
+        boolean needsDownload = true;
+        String fileName = null;
+        try {
+            if (!TextUtils.isEmpty(reply)) {
                 JSONObject jsonObject = new JSONObject(reply);
-                String fileName = jsonObject.getString("filePath");
-                String mimeType = jsonObject.getString("mimeType");
-                String encoding = jsonObject.getString("encoding");
-                File file = new File(fileName);
-                if (file.exists()) {
-                    try {
-                        FileInputStream fileInputStream = new FileInputStream(file);
-                        return new WebResourceResponse(mimeType, encoding, fileInputStream);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
+                fileName = jsonObject.optString("filePath");
+                String mimeType = jsonObject.optString("mimeType");
+                String encoding = jsonObject.optString("encoding");
+                needsDownload = (TextUtils.isEmpty(fileName) || TextUtils.isEmpty(mimeType) || TextUtils.isEmpty(encoding));
+                if (!TextUtils.isEmpty(fileName)) {
+                    File file = new File(fileName);
+                    if (file.exists()) {
+                        try {
+                            FileInputStream fileInputStream = new FileInputStream(file);
+                            if (hasOrigin) {
+                                Map<String, String> headers = new HashMap<>();
+                                headers.put("access-control-allow-origin", "*");
+                                headers.put("access-control-allow-credentials", "true");
+                                headers.put("access-control-allow-methods", "GET POST OPTIONS");
+                                headers.put("Access-Control-Allow-Headers", "Content-Type");
+                                return new WebResourceResponse(mimeType, encoding, 200, "ok", headers, fileInputStream);
+                            }
+                            return new WebResourceResponse(mimeType, encoding, fileInputStream);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
+
+
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
 
-        final String method = request.getMethod();
-        String ext = MimeTypeMap.getFileExtensionFromUrl(url);
-        String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
-
+        final String method = request.getMethod().toLowerCase();
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-            conn.setRequestMethod(method);
-            conn.setDoInput(true);
-            conn.setUseCaches(false);
+            if ("get".equals(method) && !TextUtils.isEmpty(url)
+                    && url.startsWith("http")) {
+                URL uri = new URL(url);
+                CookieManager cookieManager = CookieManager.getInstance();
+                String cookie = cookieManager.getCookie(uri.getHost());
+                HttpURLConnection conn = (HttpURLConnection) uri.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setDoInput(true);
+                conn.setRequestProperty("Cookie", cookie);
+                Map<String, String> requestHeaders = request.getRequestHeaders();
+                if (requestHeaders != null && !requestHeaders.isEmpty()) {
+                    for (Map.Entry<String, String> entry : requestHeaders.entrySet()) {
+                        conn.setRequestProperty(entry.getKey(), entry.getValue());
+                    }
+                }
+                conn.setUseCaches(false);
+                int responseCode = conn.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    String contentType = conn.getContentType();
+                    String mimeType = getMime(contentType);
+                    String charset = getCharset(contentType);
+                    if (!TextUtils.isEmpty(mimeType)) {
+                        Map<String, String> responseHeaders = convertResponseHeaders(conn.getHeaderFields());
+                        if (hasOrigin) {
+                            Map<String, String> headers = new HashMap<>();
+                            headers.put("access-control-allow-origin", "*");
+                            headers.put("access-control-allow-credentials", "true");
+                            headers.put("access-control-allow-methods", "GET POST OPTIONS");
+                            headers.put("Access-Control-Allow-Headers", "Content-Type");
+                            responseHeaders.putAll(headers);
+                        }
+                        if (needsDownload) {
+                            if (fileName == null) {
+                                fileName = view.getContext().getFilesDir().getAbsolutePath() + File.separator + "offline" + File.separator + System.currentTimeMillis();
+                            }
+                            try {
+                                InputStream inputStream = conn.getInputStream();
+                                OutputStream os = new FileOutputStream(fileName);
+                                int bytesRead = 0;
+                                byte[] buffer = new byte[1024];
+                                while ((bytesRead = inputStream.read(buffer, 0, 1024)) != -1) {
+                                    os.write(buffer, 0, bytesRead);
+                                }
+                                os.close();
+                                inputStream.close();
+                                String finalFileName = fileName;
+                                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        String webUrl = view.getUrl();
+                                        JSONObject jsonObject = new JSONObject();
+                                        if (requestHeaders != null) {
+                                            try {
+                                                jsonObject.put("requestHeaders", new JSONObject(requestHeaders));
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                        try {
+                                            jsonObject.put("filePath", finalFileName);
+                                        } catch (JSONException e) {
+                                            e.printStackTrace();
+                                        }
+                                        sendInterceptRequest(webViewClient, view, url, mimeType, webUrl, TextUtils.isEmpty(charset) ? Charset.defaultCharset().name() : charset, jsonObject.toString());
+                                    }
+                                });
+                                return new WebResourceResponse(mimeType, TextUtils.isEmpty(charset) ? Charset.defaultCharset().name() : charset, responseCode, conn.getResponseMessage(), responseHeaders, new FileInputStream(fileName));
+                            } catch (Exception e) {
 
-            String contentType = conn.getContentType();
-            String mimeType = getMime(contentType);
-            String charset = getCharset(contentType);
-            Map<String, String> responseHeaders = convertResponseHeaders(conn.getHeaderFields());
-            String contentEncoding = conn.getContentEncoding();
+                            }
 
-            if (!TextUtils.isEmpty(mime)) {
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        String webUrl = view.getUrl();
-                        sendInterceptRequest(webViewClient, view, url, mime, webUrl, contentEncoding == null ? (charset == null ? "" : charset) : contentEncoding);
+
+                        }
+
+                        return new WebResourceResponse(mimeType, TextUtils.isEmpty(charset) ? Charset.defaultCharset().name() : charset, responseCode, conn.getResponseMessage(), responseHeaders, conn.getInputStream());
 
                     }
-                });
-                return new WebResourceResponse(
-                        mime,
-                        contentEncoding,
-                        conn.getResponseCode(),
-                        conn.getResponseMessage(),
-                        responseHeaders,
-                        conn.getInputStream()
-                );
+
+                }
+
             }
 
 
@@ -249,9 +321,9 @@ public class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
         return null;
     }
 
-    public void sendInterceptRequest(WebViewClient webViewClient, WebView webView, String requestUrl, String mimeType, String webUrl, String encoding) {
+    public void sendInterceptRequest(WebViewClient webViewClient, WebView webView, String requestUrl, String mimeType, String webUrl, String encoding, String requestHeaders) {
         sendInterceptRequest(instanceManager.getInstanceId(webViewClient), instanceManager.getInstanceId(webView),
-                requestUrl, mimeType, webUrl, encoding, new Reply<String>() {
+                requestUrl, mimeType, webUrl, encoding, requestHeaders, new Reply<String>() {
                     @Override
                     public void reply(String reply) {
 

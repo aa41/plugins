@@ -292,6 +292,8 @@ class WebView {
   Future<String> screenshot( String url, String ext,String filePath) =>
       api.screenshotFromInstance(this, url, ext,filePath);
 
+  /// customAction
+  Future<String> customAction(String params)=>api.customActionFromInstace(this,params);
   /// Sets the [WebViewClient] that will receive various notifications and requests.
   ///
   /// This will replace the current handler.
@@ -702,7 +704,7 @@ abstract class WebViewClient {
     throw UnimplementedError();
   }
   /// sendInterceptRequest
-  void  sendInterceptRequest(WebView webView,String requestUrl,String webUrl,String mimeType,String encoding){
+  void  sendInterceptRequest(WebView webView,String requestUrl,String webUrl,String mimeType,String encoding,dynamic extraData){
   }
   // TODO(bparrishMines): Update documentation when WebView.postVisualStateCallback is added.
   /// Notify the host application that a page has finished loading.

@@ -36,7 +36,7 @@ typedef PageFinishedCallback = void Function(String url);
 
 typedef ShouldInterceptRequest = String Function(String url);
 
-typedef SendInterceptRequest = void Function(String requestUrl,String webUrl,String mimeType,String encoding);
+typedef SendInterceptRequest = void Function(String requestUrl,String webUrl,String mimeType,String encoding,dynamic extraData);
 
 /// Signature for when a [WebView] is loading a page.
 typedef PageLoadingCallback = void Function(int progress);
@@ -372,9 +372,9 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
   }
 
   @override
-  void sendInterceptRequest(String requestUrl, String webUrl, String mimeType, String encoding) {
+  void sendInterceptRequest(String requestUrl, String webUrl, String mimeType, String encoding,dynamic extraData) {
     if(_webView.sendInterceptRequest != null){
-      _webView.sendInterceptRequest!(requestUrl,webUrl,mimeType,encoding);
+      _webView.sendInterceptRequest!(requestUrl,webUrl,mimeType,encoding,extraData);
     }
   }
 }

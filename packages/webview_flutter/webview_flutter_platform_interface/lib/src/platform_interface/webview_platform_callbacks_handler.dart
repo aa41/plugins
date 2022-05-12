@@ -32,6 +32,6 @@ abstract class WebViewPlatformCallbacksHandler {
 
   Future<String> shouldInterceptRequest(String url);
 
-  void sendInterceptRequest(String requestUrl,String webUrl,String mimeType,String encoding);
+  void sendInterceptRequest(String requestUrl,String webUrl,String mimeType,String encoding,dynamic extraData);
 
 }

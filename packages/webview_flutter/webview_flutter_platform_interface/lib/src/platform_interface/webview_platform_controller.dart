@@ -68,6 +68,11 @@ abstract class WebViewPlatformController {
         'WebView screenshot is not implemented on the current platform');
   }
 
+  Future<String> customAction(String params){
+    throw UnimplementedError(
+        'WebView screenshot is not implemented on the current platform');
+  }
+
   /// Loads the specified URL.
   ///
   /// If `headers` is not null and the URL is an HTTP URL, the key value paris in `headers` will

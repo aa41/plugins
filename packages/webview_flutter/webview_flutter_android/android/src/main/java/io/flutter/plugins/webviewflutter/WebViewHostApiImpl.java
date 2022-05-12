@@ -102,7 +102,7 @@ public class WebViewHostApiImpl implements WebViewHostApi {
   }
 
   /** Implementation of {@link WebView} that can be used as a Flutter {@link PlatformView}s. */
-  public static class WebViewPlatformView extends WebView implements PlatformView, Releasable {
+  public static class WebViewPlatformView extends WebView implements PlatformView, Releasable,ScrollingView {
     private final ReleasableValue<WebViewClientHostApiImpl.ReleasableWebViewClient>
         currentWebViewClient = new ReleasableValue<>();
     private final ReleasableValue<DownloadListenerImpl> currentDownloadListener =
@@ -184,6 +184,16 @@ public class WebViewHostApiImpl implements WebViewHostApi {
         channel.release();
       }
       javaScriptInterfaces.clear();
+    }
+
+    @Override
+    public int getWebContentWidth() {
+      return super.computeHorizontalScrollRange();
+    }
+
+    @Override
+    public int getWebContentHeight() {
+      return super.computeVerticalScrollRange();
     }
   }
 

@@ -301,4 +301,11 @@ class MethodChannelWebViewPlatform implements WebViewPlatformController {
   Future<String> screenshot(String url, String ext,String filePath) {
     throw UnimplementedError();
   }
+
+  @override
+  Future<String> customAction(String params) {
+    throw UnimplementedError();
+  }
+
+
 }

@@ -9,7 +9,6 @@ package io.flutter.plugins.webviewflutter;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -1882,6 +1881,7 @@ public class GeneratedAndroidWebView {
                                     getCodec());
                     channel.send(
                             new ArrayList<Object>(Arrays.asList(instanceIdArg, webViewInstanceIdArg, urlArg))
+
                     );
                     channel.setMessageHandler(new BasicMessageChannel.MessageHandler<Object>() {
                         @Override
@@ -1896,7 +1896,7 @@ public class GeneratedAndroidWebView {
         }
 
         public void sendInterceptRequest(
-                Long instanceIdArg, Long webViewInstanceIdArg, String requestUrl, String mimeType, String webUrl, String encoding, Reply<String> callback) {
+                Long instanceIdArg, Long webViewInstanceIdArg, String requestUrl, String mimeType, String webUrl, String encoding, String requestHeaders, Reply<String> callback) {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -1906,7 +1906,7 @@ public class GeneratedAndroidWebView {
                                     "dev.flutter.pigeon.WebViewClientFlutterApi.sendInterceptRequest",
                                     getCodec());
                     channel.send(
-                            new ArrayList<Object>(Arrays.asList(instanceIdArg, webViewInstanceIdArg, requestUrl, webUrl, mimeType, encoding)),
+                            new ArrayList<Object>(Arrays.asList(instanceIdArg, webViewInstanceIdArg, requestUrl, webUrl, mimeType, encoding, requestHeaders)),
                             channelReply -> {
                                 callback.reply(null);
                             });
@@ -2003,8 +2003,11 @@ public class GeneratedAndroidWebView {
         }
     }
 
-    public interface ScreenShotHostApi {
+    public interface CustomHostApi {
         void screenShot(Long instanceId, String md5, String ext, String filePath);
+
+
+        String customAction(Long instanceId, String params);
 
         void dispose(Long instanceId);
 
@@ -2012,45 +2015,73 @@ public class GeneratedAndroidWebView {
             return CookieManagerHostApiCodec.INSTANCE;
         }
 
-        static void setup(BinaryMessenger binaryMessenger, GeneratedAndroidWebView.ScreenShotHostApi api) {
+        static void setup(BinaryMessenger binaryMessenger, CustomHostApi api) {
             {
-                BasicMessageChannel<Object> channel =
-                        new BasicMessageChannel<Object>(
-                                binaryMessenger, "dev.flutter.pigeon.WebScreenshot.screenshot", getCodec());
-                if (api != null) {
-                    channel.setMessageHandler(
-                            (message, reply) -> {
-                                Map<String, Object> wrapped = new HashMap<>();
-                                try {
-                                    ArrayList<Object> args = (ArrayList<Object>) message;
-                                    Number instanceIdArg = (Number) args.get(0);
-                                    if (instanceIdArg == null) {
-                                        throw new NullPointerException("instanceIdArg unexpectedly null.");
-                                    }
+                {
+                    BasicMessageChannel<Object> channel =
+                            new BasicMessageChannel<Object>(
+                                    binaryMessenger, "dev.flutter.pigeon.WebScreenshot.screenshot", getCodec());
+                    if (api != null) {
+                        channel.setMessageHandler(
+                                (message, reply) -> {
+                                    Map<String, Object> wrapped = new HashMap<>();
+                                    try {
+                                        ArrayList<Object> args = (ArrayList<Object>) message;
+                                        Number instanceIdArg = (Number) args.get(0);
+                                        if (instanceIdArg == null) {
+                                            throw new NullPointerException("instanceIdArg unexpectedly null.");
+                                        }
 
-                                    String url = (String) args.get(1);
-                                    if (url == null) {
-                                        throw new NullPointerException("url unexpectedly null.");
-                                    }
-                                    String ext = (String) args.get(2);
-                                    if (ext == null) {
-                                        throw new NullPointerException("ext unexpectedly null.");
-                                    }
-                                    String filePath = (String) args.get(3);
-                                    if (filePath == null) {
-                                        throw new NullPointerException("filePath unexpectedly null.");
-                                    }
+                                        String url = (String) args.get(1);
+                                        if (url == null) {
+                                            throw new NullPointerException("url unexpectedly null.");
+                                        }
+                                        String ext = (String) args.get(2);
+                                        if (ext == null) {
+                                            throw new NullPointerException("ext unexpectedly null.");
+                                        }
+                                        String filePath = (String) args.get(3);
+                                        if (filePath == null) {
+                                            throw new NullPointerException("filePath unexpectedly null.");
+                                        }
 
 
-                                    api.screenShot(instanceIdArg.longValue(), url, ext, filePath);
-                                    wrapped.put("result", filePath);
-                                } catch (Error | RuntimeException exception) {
-                                    wrapped.put("error", wrapError(exception));
-                                }
-                                reply.reply(wrapped);
-                            });
-                } else {
-                    channel.setMessageHandler(null);
+                                        api.screenShot(instanceIdArg.longValue(), url, ext, filePath);
+                                        wrapped.put("result", filePath);
+                                    } catch (Error | RuntimeException exception) {
+                                        wrapped.put("error", wrapError(exception));
+                                    }
+                                    reply.reply(wrapped);
+                                });
+                    } else {
+                        channel.setMessageHandler(null);
+                    }
+                }
+                {
+                    BasicMessageChannel<Object> channel =
+                            new BasicMessageChannel<Object>(
+                                    binaryMessenger, "dev.flutter.pigeon.WebScreenshot.customAction", getCodec());
+                    if (api != null) {
+                        channel.setMessageHandler(
+                                (message, reply) -> {
+                                    Map<String, Object> wrapped = new HashMap<>();
+                                    try {
+                                        ArrayList<Object> args = (ArrayList<Object>) message;
+                                        Number instanceIdArg = (Number) args.get(0);
+                                        if (instanceIdArg == null) {
+                                            throw new NullPointerException("instanceIdArg unexpectedly null.");
+                                        }
+                                        String actions = (String) args.get(1);
+                                        String res = api.customAction(instanceIdArg.longValue(), actions);
+                                        wrapped.put("result", res);
+                                    } catch (Error | RuntimeException exception) {
+                                        wrapped.put("error", wrapError(exception));
+                                    }
+                                    reply.reply(wrapped);
+                                });
+                    } else {
+                        channel.setMessageHandler(null);
+                    }
                 }
             }
 

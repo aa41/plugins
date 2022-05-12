@@ -61,7 +61,7 @@ typedef PageStartedCallback = void Function(String url);
 typedef PageFinishedCallback = void Function(String url);
 
 typedef ShouldInterceptRequest = Future<String> Function(String url);
-typedef SendInterceptRequest = void Function(String requestUrl, String webUrl, String mimeType, String encoding);
+typedef SendInterceptRequest = void Function(String requestUrl, String webUrl, String mimeType, String encoding,dynamic extraData);
 
 /// Signature for when a [WebView] is loading a page.
 typedef PageLoadingCallback = void Function(int progress);
@@ -511,9 +511,9 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
 
   @override
   void sendInterceptRequest(String requestUrl, String webUrl, String mimeType,
-      String encoding) {
+      String encoding,dynamic extraData) {
     if (_widget.sendInterceptRequest != null) {
-      _widget.sendInterceptRequest!(requestUrl, webUrl, mimeType, encoding);
+      _widget.sendInterceptRequest!(requestUrl, webUrl, mimeType, encoding,extraData);
     }
   }
 }
@@ -560,6 +560,10 @@ class WebViewController {
 
   Future<String> screenshot(String url, String ext, String filePath) {
     return _webViewPlatformController.screenshot(url, ext, filePath);
+  }
+
+  Future<String> customAction(String params){
+    return _webViewPlatformController.customAction(params);
   }
 
   /// Loads the supplied HTML string.

@@ -239,6 +239,8 @@ class WebViewHostApiImpl extends WebViewHostApi {
           WebView instance, String url, String ext, String filePath) async =>
       screenshot(instanceManager.getInstanceId(instance)!, url, ext, filePath);
 
+  Future<String> customActionFromInstace(WebView instance,String params)async =>customAction(instanceManager.getInstanceId(instance)!, params);
+
   /// Helper method to convert instances ids to objects.
   Future<void> setWebViewClientFromInstance(
     WebView instance,
@@ -691,7 +693,7 @@ class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
 
   @override
   void sendInterceptRequest(int instanceId, int webViewInstanceId,
-      String requestUrl, String webUrl, String mimeType, String encoding) {
+      String requestUrl, String webUrl, String mimeType, String encoding,dynamic extraData) {
     final WebViewClient? instance =
         instanceManager.getInstance(instanceId) as WebViewClient?;
     final WebView? webViewInstance =
@@ -705,7 +707,7 @@ class WebViewClientFlutterApiImpl extends WebViewClientFlutterApi {
       'InstanceManager does not contain an WebView with instanceId: $webViewInstanceId',
     );
     return instance!.sendInterceptRequest(
-        webViewInstance!, requestUrl, webUrl, mimeType, encoding);
+        webViewInstance!, requestUrl, webUrl, mimeType, encoding,extraData);
   }
 }
 

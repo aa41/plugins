@@ -25,7 +25,7 @@ import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebChromeClient
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebSettingsHostApi;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebViewClientHostApi;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebViewHostApi;
-import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.ScreenShotHostApi;
+import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.CustomHostApi;
 
 /**
  * Java platform implementation of the webview_flutter plugin.
@@ -81,9 +81,9 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
             FlutterAssetManager flutterAssetManager) {
 
         InstanceManager instanceManager = new InstanceManager();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            WebView.enableSlowWholeDocumentDraw();
-        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            WebView.enableSlowWholeDocumentDraw();
+//        }
 
         viewRegistry.registerViewFactory(
                 "plugins.flutter.io/webview", new FlutterWebViewFactory(instanceManager));
@@ -125,8 +125,7 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
         FlutterAssetManagerHostApi.setup(
                 binaryMessenger, new FlutterAssetManagerHostApiImpl(flutterAssetManager));
         CookieManagerHostApi.setup(binaryMessenger, new CookieManagerHostApiImpl());
-        ScreenShotHostApi.setup(binaryMessenger, new ScreenShotHostApiImpl(instanceManager));
-
+        CustomHostApi.setup(binaryMessenger, new CustomHostApiImpl(instanceManager));
     }
 
     @Override

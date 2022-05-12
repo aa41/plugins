@@ -345,6 +345,10 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
   Future<String> screenshot(String url, String ext, String filePath) =>
       webView.screenshot(url, ext, filePath);
 
+  /// customAction
+  Future<String> customAction(String params) =>
+      webView.customAction(params);
+
   Future<void> _dispose() => webView.release();
 
   void _setCreationParams(CreationParams creationParams) {
@@ -538,7 +542,7 @@ class WebViewAndroidWebViewClient extends android_webview.WebViewClient {
   final Future<String> Function(String url) shouldInterceptRequestCallback;
 
   final void Function(
-          String requestUrl, String webUrl, String mimeType, String encoding)
+          String requestUrl, String webUrl, String mimeType, String encoding,dynamic extraData)
       sendInterceptRequestCallback;
 
   /// Callback when [android_webview.WebViewClient] receives a callback from [android_webview.WebViewClient].onPageFinished.
@@ -615,8 +619,8 @@ class WebViewAndroidWebViewClient extends android_webview.WebViewClient {
 
   @override
   void sendInterceptRequest(android_webview.WebView webView, String requestUrl,
-      String webUrl, String mimeType, String encoding) {
-    return sendInterceptRequestCallback(requestUrl, webUrl, mimeType, encoding);
+      String webUrl, String mimeType, String encoding,dynamic extraData) {
+    return sendInterceptRequestCallback(requestUrl, webUrl, mimeType, encoding,extraData);
   }
 
   @override
