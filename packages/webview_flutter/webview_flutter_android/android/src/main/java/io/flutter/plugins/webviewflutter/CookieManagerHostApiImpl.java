@@ -5,7 +5,7 @@
 package io.flutter.plugins.webviewflutter;
 
 import android.os.Build;
-import android.webkit.CookieManager;
+import com.tencent.smtt.sdk.CookieManager;
 
 class CookieManagerHostApiImpl implements GeneratedAndroidWebView.CookieManagerHostApi {
   @Override

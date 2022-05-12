@@ -5,12 +5,15 @@
 package io.flutter.plugins.webviewflutter;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Handler;
 import android.view.View;
-import android.webkit.WebView;
 
 import androidx.annotation.NonNull;
+
+import com.tencent.smtt.export.external.TbsCoreSettings;
+import com.tencent.smtt.sdk.QbSdk;
+
+import java.util.HashMap;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
@@ -18,6 +21,7 @@ import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.platform.PlatformViewRegistry;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.CookieManagerHostApi;
+import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.CustomHostApi;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.DownloadListenerHostApi;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.FlutterAssetManagerHostApi;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.JavaScriptChannelHostApi;
@@ -25,7 +29,6 @@ import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebChromeClient
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebSettingsHostApi;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebViewClientHostApi;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebViewHostApi;
-import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.CustomHostApi;
 
 /**
  * Java platform implementation of the webview_flutter plugin.
@@ -63,8 +66,7 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
      */
     @SuppressWarnings({"unused", "deprecation"})
     public static void registerWith(io.flutter.plugin.common.PluginRegistry.Registrar registrar) {
-        new WebViewFlutterPlugin()
-                .setUp(
+        new WebViewFlutterPlugin().setUp(
                         registrar.messenger(),
                         registrar.platformViewRegistry(),
                         registrar.activity(),
@@ -79,11 +81,29 @@ public class WebViewFlutterPlugin implements FlutterPlugin, ActivityAware {
             Context context,
             View containerView,
             FlutterAssetManager flutterAssetManager) {
+        HashMap map = new HashMap();
+        map.put(TbsCoreSettings.TBS_SETTINGS_USE_SPEEDY_CLASSLOADER, true);
+        map.put(TbsCoreSettings.TBS_SETTINGS_USE_DEXLOADER_SERVICE, true);
+        QbSdk.initTbsSettings(map);
+        QbSdk.initX5Environment(context.getApplicationContext(), new QbSdk.PreInitCallback() {
+            @Override
+            public void onCoreInitFinished() {
+                // 内核初始化完成，可能为系统内核，也可能为系统内核
+            }
+
+            /**
+             * 预初始化结束
+             * 由于X5内核体积较大，需要依赖网络动态下发，所以当内核不存在的时候，默认会回调false，此时将会使用系统内核代替
+             * @param isX5 是否使用X5内核
+             */
+            @Override
+            public void onViewInitFinished(boolean isX5) {
+
+            }
+        });
+
 
         InstanceManager instanceManager = new InstanceManager();
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-//            WebView.enableSlowWholeDocumentDraw();
-//        }
 
         viewRegistry.registerViewFactory(
                 "plugins.flutter.io/webview", new FlutterWebViewFactory(instanceManager));

@@ -4,7 +4,7 @@
 
 package io.flutter.plugins.webviewflutter;
 
-import android.webkit.DownloadListener;
+import com.tencent.smtt.sdk.DownloadListener;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.DownloadListenerHostApi;

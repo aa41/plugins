@@ -4,8 +4,8 @@
 
 package io.flutter.plugins.webviewflutter;
 
-import android.webkit.WebChromeClient;
-import android.webkit.WebView;
+import com.tencent.smtt.sdk.WebChromeClient;
+import com.tencent.smtt.sdk.WebView;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebChromeClientFlutterApi;
 
