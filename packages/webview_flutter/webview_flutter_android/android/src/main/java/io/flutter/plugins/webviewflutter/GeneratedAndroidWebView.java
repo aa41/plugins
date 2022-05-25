@@ -9,6 +9,7 @@ package io.flutter.plugins.webviewflutter;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -2004,7 +2005,7 @@ public class GeneratedAndroidWebView {
     }
 
     public interface CustomHostApi {
-        void screenShot(Long instanceId, String md5, String ext, String filePath);
+        void screenShot(Long instanceId, String md5, String ext, String filePath, Handler.Callback callback);
 
 
         String customAction(Long instanceId, String params);
@@ -2022,6 +2023,7 @@ public class GeneratedAndroidWebView {
                             new BasicMessageChannel<Object>(
                                     binaryMessenger, "dev.flutter.pigeon.WebScreenshot.screenshot", getCodec());
                     if (api != null) {
+
                         channel.setMessageHandler(
                                 (message, reply) -> {
                                     Map<String, Object> wrapped = new HashMap<>();
@@ -2046,12 +2048,19 @@ public class GeneratedAndroidWebView {
                                         }
 
 
-                                        api.screenShot(instanceIdArg.longValue(), url, ext, filePath);
-                                        wrapped.put("result", filePath);
+                                        api.screenShot(instanceIdArg.longValue(), url, ext, filePath, new Handler.Callback() {
+                                            @Override
+                                            public boolean handleMessage(@NonNull Message msg) {
+                                                wrapped.put("result", filePath);
+                                                reply.reply(wrapped);
+                                                return false;
+                                            }
+                                        });
                                     } catch (Error | RuntimeException exception) {
                                         wrapped.put("error", wrapError(exception));
+                                        reply.reply(wrapped);
+
                                     }
-                                    reply.reply(wrapped);
                                 });
                     } else {
                         channel.setMessageHandler(null);

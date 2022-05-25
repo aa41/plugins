@@ -7,6 +7,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
 import android.webkit.WebView;
@@ -25,18 +27,32 @@ import java.util.List;
 public class CustomHostApiImpl implements GeneratedAndroidWebView.CustomHostApi {
 
     private final InstanceManager instanceManager;
+    private Handler handler;
 
     public CustomHostApiImpl(InstanceManager instanceManager) {
         this.instanceManager = instanceManager;
     }
 
     @Override
-    public void screenShot(Long instanceId, String md5, String ext, String filePath) {
+    public void screenShot(Long instanceId, String md5, String ext, String filePath, Handler.Callback callback) {
         final WebView webView = (WebView) instanceManager.getInstance(instanceId);
         Bitmap bitmap = getViewBitmap(webView);
-       // Bitmap bitmap = scrollWebView(webView);
+     //   Bitmap bitmap = scrollWebView(webView);
+        handler = new Handler(Looper.myLooper());
+        new Thread(){
+            @Override
+            public void run() {
+                super.run();
+                saveBitmap(webView.getContext(), bitmap, md5, ext, filePath);
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.handleMessage(null);
+                    }
+                });
 
-        saveBitmap(webView.getContext(), bitmap, md5, ext, filePath);
+            }
+        }.start();
     }
 
     @Override
@@ -139,7 +155,7 @@ public class CustomHostApiImpl implements GeneratedAndroidWebView.CustomHostApi 
 
         int bitmapWidth = datas.get(0).getWidth();
         int bitmapHeight = contentHeight;
-        Bitmap bimap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.RGB_565);
+        Bitmap bimap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bimap);
         Paint paint = new Paint();
         for (int count = datas.size(), i = 0; i < count; i++) {
