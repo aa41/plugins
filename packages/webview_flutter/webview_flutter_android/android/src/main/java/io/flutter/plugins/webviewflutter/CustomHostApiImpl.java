@@ -11,7 +11,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
+
+import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewFeature;
 
 import org.json.JSONObject;
 
@@ -37,9 +41,9 @@ public class CustomHostApiImpl implements GeneratedAndroidWebView.CustomHostApi 
     public void screenShot(Long instanceId, String md5, String ext, String filePath, Handler.Callback callback) {
         final WebView webView = (WebView) instanceManager.getInstance(instanceId);
         Bitmap bitmap = getViewBitmap(webView);
-     //   Bitmap bitmap = scrollWebView(webView);
+        //   Bitmap bitmap = scrollWebView(webView);
         handler = new Handler(Looper.myLooper());
-        new Thread(){
+        new Thread() {
             @Override
             public void run() {
                 super.run();
@@ -68,6 +72,21 @@ public class CustomHostApiImpl implements GeneratedAndroidWebView.CustomHostApi 
                         String filePath = jsonObject.optString("filePath");
                         webView.saveWebArchive(filePath);
                         return filePath;
+                    case "screenshot":
+
+
+                        break;
+                    case "setForceDark":
+                        boolean isForceDark = jsonObject.optBoolean("forceDark");
+                        if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+                            if(isForceDark){
+                                WebSettingsCompat.setForceDark(webView.getSettings(), WebSettings.FORCE_DARK_ON);
+                            }else {
+                                WebSettingsCompat.setForceDark(webView.getSettings(), WebSettings.FORCE_DARK_OFF);
+
+                            }
+                        }
+                        break;
                 }
 
             } catch (Exception e) {
@@ -76,7 +95,7 @@ public class CustomHostApiImpl implements GeneratedAndroidWebView.CustomHostApi 
         }
 
 
-        return null;
+        return "";
     }
 
 
@@ -91,10 +110,10 @@ public class CustomHostApiImpl implements GeneratedAndroidWebView.CustomHostApi 
         mWebView.measure(View.MeasureSpec.makeMeasureSpec(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         mWebView.layout(0, 0, mWebView.getMeasuredWidth(), mWebView.getMeasuredHeight());
-//        mWebView.setDrawingCacheEnabled(true);
-//        mWebView.buildDrawingCache();
+        mWebView.setDrawingCacheEnabled(true);
+        mWebView.buildDrawingCache();
         Bitmap longImage = Bitmap.createBitmap(mWebView.getWidth(),
-                (int) (mWebView.getContentHeight() * mWebView.getScale()), Bitmap.Config.ARGB_8888);
+                mWebView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(longImage);
         //  canvas.scale(1.0f, (float) ((ScrollingView) mWebView).getWebContentHeight() / (float) mWebView.getContentHeight());
         mWebView.draw(canvas);
