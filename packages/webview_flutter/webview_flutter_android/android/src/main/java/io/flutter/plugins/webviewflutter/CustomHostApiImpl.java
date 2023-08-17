@@ -7,8 +7,17 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.ParcelFileDescriptor;
+import android.print.PageRange;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintJob;
+import android.print.PrintManager;
 import android.text.TextUtils;
 import android.view.View;
 import android.webkit.WebSettings;
@@ -16,6 +25,8 @@ import android.webkit.WebView;
 
 import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewFeature;
+
+import com.android.dx.stock.ProxyBuilder;
 
 import org.json.JSONObject;
 
@@ -25,6 +36,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,6 +89,54 @@ public class CustomHostApiImpl implements GeneratedAndroidWebView.CustomHostApi 
 
 
                         break;
+                    case "saveToPdf":
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            try {
+                                String pdfFilePath = jsonObject.optString("pdfFilePath");
+                                File pdfFile = new File(pdfFilePath);
+                                if(pdfFile.exists()){
+                                    pdfFile.delete();
+                                }
+                                pdfFile.createNewFile();
+                                ParcelFileDescriptor pfd = ParcelFileDescriptor.open(pdfFile,ParcelFileDescriptor.MODE_READ_WRITE);
+                                PrintDocumentAdapter printDocumentAdapter = webView.createPrintDocumentAdapter();
+
+                                PrintAttributes.MediaSize mediaSize = PrintAttributes.MediaSize.ISO_A4;
+                                PrintAttributes attributes = new PrintAttributes.Builder()
+                                        .setMediaSize(mediaSize)
+                                        .setResolution(new PrintAttributes.Resolution("id",Context.PRINT_SERVICE,240,240))
+                                        .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
+                                        .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+                                        .build();
+                                printDocumentAdapter.onStart();
+                                int numberOfRange = (webView.getContentHeight())*240/mediaSize.getHeightMils();
+                                PageRange[] pageRanges =new PageRange[]{ new PageRange(0,numberOfRange)};
+                                printDocumentAdapter.onLayout(attributes,attributes,new CancellationSignal(),getLayoutResultCallback(new InvocationHandler() {
+                                    @Override
+                                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                                        if(method.getName().equals("onLayoutFinished")){
+                                            PrintDocumentAdapter.WriteResultCallback writeResultCallback = getWriteResultCallback(new InvocationHandler() {
+                                                @Override
+                                                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                                                    if(method.getName().equals("onWriteFinished")){
+
+                                                    }
+                                                    return null;
+                                                }
+                                            });
+                                            printDocumentAdapter.onWrite(pageRanges,pfd,new CancellationSignal(),writeResultCallback);
+                                        }else {
+
+                                        }
+                                        return null;
+                                    }
+                                }),new Bundle());
+                            }catch (Exception e){
+
+                            }
+
+
+                        }
                     case "setForceDark":
                         boolean isForceDark = jsonObject.optBoolean("forceDark");
                         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
@@ -102,6 +163,19 @@ public class CustomHostApiImpl implements GeneratedAndroidWebView.CustomHostApi 
     @Override
     public void dispose(Long instanceId) {
 
+    }
+
+
+    public static PrintDocumentAdapter.LayoutResultCallback getLayoutResultCallback(InvocationHandler invocationHandler) throws  IOException{
+        return ProxyBuilder.forClass(PrintDocumentAdapter.LayoutResultCallback.class)
+                .handler(invocationHandler)
+                .build();
+    }
+
+    public static PrintDocumentAdapter.WriteResultCallback  getWriteResultCallback(InvocationHandler invocationHandler)throws  IOException{
+        return  ProxyBuilder.forClass(PrintDocumentAdapter.WriteResultCallback.class)
+                .handler(invocationHandler)
+                .build();
     }
 
 
